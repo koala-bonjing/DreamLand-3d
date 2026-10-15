@@ -92,6 +92,10 @@ export class ChunkManager {
     return this.loadedChunks.size;
   }
 
+  public getActiveChunks(): Array<{ cx: number; cz: number }> {
+    return Array.from(this.loadedChunks.values()).map((c) => ({ cx: c.cx, cz: c.cz }));
+  }
+
   public update(playerX: number, playerZ: number): void {
     const centerCx = Math.floor((playerX + CHUNK_SIZE * 0.5) / CHUNK_SIZE);
     const centerCz = Math.floor((playerZ + CHUNK_SIZE * 0.5) / CHUNK_SIZE);

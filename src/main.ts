@@ -6,8 +6,12 @@ import { ChunkManager } from './world/chunkManager';
 import { DayCycle } from './world/dayCycle';
 import { SkyDome, CloudManager } from './world/sky';
 import { WaterPlane } from './world/water';
+import { HeartManager } from './world/hearts';
 import { FlightControls } from './player/controls';
 import { FlightCamera } from './player/camera';
+import { GameHud } from './ui/hud';
+import { PhotoMode } from './ui/photoMode';
+import { GameMenu } from './ui/menu';
 import { hashSeed } from './world/noise';
 
 const container = document.getElementById('app');
@@ -18,18 +22,18 @@ if (container) {
   canvas.style.display = 'block';
   container.appendChild(canvas);
 
-  // Overlay for fly-through metrics (A15 monitoring)
+  // Overlay for fly-through metrics (hidden by default in production)
   const overlay = document.createElement('div');
   overlay.style.position = 'absolute';
-  overlay.style.top = '12px';
+  overlay.style.bottom = '12px';
   overlay.style.left = '12px';
-  overlay.style.background = 'rgba(255, 255, 255, 0.88)';
-  overlay.style.padding = '8px 12px';
-  overlay.style.borderRadius = '10px';
+  overlay.style.background = 'rgba(255, 255, 255, 0.75)';
+  overlay.style.padding = '4px 10px';
+  overlay.style.borderRadius = '8px';
   overlay.style.fontFamily = 'monospace';
-  overlay.style.fontSize = '12px';
+  overlay.style.fontSize = '11px';
   overlay.style.pointerEvents = 'none';
-  overlay.style.zIndex = '10';
+  overlay.style.zIndex = '15';
   container.appendChild(overlay);
 
   const quality = new QualityManager('A15');
@@ -60,16 +64,62 @@ if (container) {
   dirLight.position.set(40, 60, 20);
   scene.add(dirLight);
 
-  const seed = hashSeed('dreamland-shared-seed');
-  const chunks = new ChunkManager({
+  // Parse seed from URL hash if present
+  const hashMatch = window.location.hash.match(/seed=([^&]+)/);
+  let currentSeedName = hashMatch ? decodeURIComponent(hashMatch[1]) : 'dreamland-shared-seed';
+  let seed = hashSeed(currentSeedName);
+
+  let chunks = new ChunkManager({
     scene,
     seed,
     ringRadius: quality.config.chunkRingRadius
   });
 
-  // Flight Controls & Camera
+  const hearts = new HeartManager(scene);
+
+  // Controls & Camera
   const controls = new FlightControls(container);
   const flightCamera = new FlightCamera(renderer.camera);
+
+  // UI Systems: HUD, Photo Mode, Menu
+  const photoMode = new PhotoMode(container, canvas);
+  const hud = new GameHud(container, {
+    onPhotoClick: () => photoMode.toggle(true),
+    onMenuClick: () => menu.toggle(true)
+  });
+
+  hud.setHearts(hearts.getCollectedCount());
+  hearts.onCollect = (count) => {
+    hud.setHearts(count);
+    if (count % 10 === 0) {
+      hud.showToast(`✨ Milestone! ${count} Hearts Collected! ✨`);
+    }
+  };
+
+  photoMode.onToggle = (active) => {
+    hud.setVisible(!active);
+    overlay.style.display = active ? 'none' : 'block';
+  };
+
+  const menu = new GameMenu(container, {
+    currentSeedName,
+    currentSkin: 'dove',
+    onSkinChange: (_skinId) => {
+      // Skin change hook (Phase 7 multiplayer/companion sync)
+    },
+    onSeedChange: (newSeedName) => {
+      currentSeedName = newSeedName;
+      seed = hashSeed(newSeedName);
+      chunks.dispose();
+      chunks = new ChunkManager({
+        scene,
+        seed,
+        ringRadius: quality.config.chunkRingRadius
+      });
+      flightCamera.position.set(0, 18, 0);
+      flightCamera.velocity.set(0, 0, 0);
+    }
+  });
 
   let lastFrameTime = performance.now();
   let lastOverlayTime = performance.now();
@@ -79,10 +129,8 @@ if (container) {
     fixedTimestep: 1 / 60,
     maxSubSteps: 5,
     onUpdate: (dt) => {
-      // Update flight physics
       flightCamera.update(dt, controls, seed);
 
-      // Update atmosphere & day/night cycle
       dayCycle.update(dt);
       fog.color.copy(dayCycle.current.fogColor);
       scene.background = dayCycle.current.fogColor;
@@ -95,8 +143,11 @@ if (container) {
       dirLight.color.copy(dayCycle.current.dirColor);
       dirLight.intensity = dayCycle.current.dirIntensity;
 
-      // Stream world chunks
       chunks.update(flightCamera.position.x, flightCamera.position.z);
+      hearts.updateChunks(chunks.getActiveChunks(), seed);
+      hearts.update(dt, flightCamera.position.x, flightCamera.position.y, flightCamera.position.z);
+
+      hud.setCompass(flightCamera.yaw);
     },
     onRender: (_alpha) => {
       const now = performance.now();
@@ -118,7 +169,7 @@ if (container) {
         const tris = renderer.renderer.info.render.triangles;
         const speed = flightCamera.velocity.length().toFixed(1);
         const alt = flightCamera.position.y.toFixed(1);
-        overlay.textContent = `FPS: ${fps} (${ms}ms) | Alt: ${alt}m | Spd: ${speed}m/s | Chunks: ${chunks.getLoadedCount()} | Draws: ${calls} | Tris: ${tris.toLocaleString()}`;
+        overlay.textContent = `FPS: ${fps} (${ms}ms) | Alt: ${alt}m | Spd: ${speed}m/s | Draws: ${calls} | Tris: ${tris.toLocaleString()}`;
         frameCount = 0;
         lastOverlayTime = now;
       }
