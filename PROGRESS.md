@@ -1,1 +1,1 @@
-Phase: P2 · Status: done · Last: engine core (renderer, loop, quality scaler) · Next: GO P3 · Perf: p95 17.0ms / 59.9fps / 18 draws / 50.7k tris · Deps: none · Blockers: none
+Phase: P3 · Status: in-progress · Last: worldgen + worker streaming + fly camera · Next: Gate B (fly 2 min on A15, report fps/overlay) · Perf: p95 17.0ms / 25 draws / 48k tris · Deps: none · Blockers: waiting for Gate B feedback
