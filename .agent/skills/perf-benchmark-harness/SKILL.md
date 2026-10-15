@@ -16,29 +16,26 @@ description: How to measure frame time and quality tiers. Use when building or r
 
 ## Snippets
 
+### Result JSON Schema
+```ts
+export interface FullBenchReport {
+  timestamp: string;
+  userAgent: string;
+  deviceTierEstimate: 'A15' | 'Mid' | 'High' | 'Fail';
+  recommendedScenario: { pixelRatio: number; fogFar: number; trees: number; chunkRing: number };
+  tierStatus: { tier30fps: boolean; tier60fps: boolean };
+  scenarios: Array<{ p50: number; p95: number; p99: number; avgFps: number; drawCalls: number; triangles: number }>;
+  heatTest?: { samples: Array<{ timeSec: number; fps: number; p95: number }>; fpsDropPercent: number };
+}
+```
+
 ### Percentile Calculation
 ```ts
 export function calcPercentile(samples: number[], p: number): number {
   if (samples.length === 0) return 0;
   const sorted = [...samples].sort((a, b) => a - b);
-  const idx = Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length));
-  return sorted[idx];
-}
-```
-
-### Frame Recorder
-```ts
-export class FrameRecorder {
-  frames: number[] = [];
-  record(ms: number) { this.frames.push(ms); }
-  summary(draws: number, tris: number) {
-    return {
-      p50: calcPercentile(this.frames, 50),
-      p95: calcPercentile(this.frames, 95),
-      drawCalls: draws,
-      triangles: tris
-    };
-  }
+  const idx = Math.min(sorted.length - 1, Math.max(0, Math.floor((p / 100) * sorted.length)));
+  return Number(sorted[idx].toFixed(2));
 }
 ```
 

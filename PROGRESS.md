@@ -1,1 +1,1 @@
-Phase: P0 · Status: done · Last: bootstrap + skills · Next: GO P1 · Perf: n/a · Deps: three, vitest · Blockers: none
+Phase: P1 · Status: in-progress · Last: bench page + harness + tests built · Next: Gate A (run /bench on A15, send JSON) · Perf: pending Gate A · Deps: none · Blockers: waiting for phone benchmark JSON

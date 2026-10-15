@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Dreamland 3D — Benchmark Harness</title>
+    <style>
+      :root {
+        --bg-pink: #ffd9ec;
+        --card-bg: rgba(255, 255, 255, 0.92);
+        --primary: #ff4d94;
+        --text: #2c1820;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--bg-pink);
+        color: var(--text);
+        touch-action: none;
+      }
+      #webgl-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+      }
+      #overlay {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        z-index: 10;
+        background: var(--card-bg);
+        padding: 8px 14px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        pointer-events: none;
+      }
+      #ui-panel {
+        position: absolute;
+        bottom: 12px;
+        left: 12px;
+        right: 12px;
+        z-index: 10;
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 14px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        max-height: 85vh;
+        overflow-y: auto;
+      }
+      .btn {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px 18px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: bold;
+        cursor: pointer;
+        min-height: 48px;
+        touch-action: manipulation;
+        transition: transform 0.1s, opacity 0.2s;
+      }
+      .btn:active {
+        transform: scale(0.97);
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .btn-secondary {
+        background: #e6e0e4;
+        color: var(--text);
+      }
+      .btn-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .btn-row .btn {
+        flex: 1 1 140px;
+      }
+      .picker-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 10px;
+        margin: 12px 0;
+      }
+      .picker-item label {
+        display: block;
+        font-size: 11px;
+        text-transform: uppercase;
+        font-weight: bold;
+        color: #7a5062;
+        margin-bottom: 4px;
+      }
+      select {
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #d9b8c7;
+        font-size: 14px;
+        background: white;
+      }
+      #result-card {
+        display: none;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #ecccdb;
+      }
+      .tier-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .tier-pass { background: #c2f5d3; color: #155724; }
+      .tier-fail { background: #ffd2d2; color: #721c24; }
+      pre#json-output {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="webgl-canvas"></canvas>
+
+    <div id="overlay">
+      <div id="fps-meter">FPS: -- | Frame: -- ms</div>
+      <div id="render-meter">Draws: -- | Tris: --</div>
+    </div>
+
+    <div id="ui-panel">
+      <div class="btn-row">
+        <button id="btn-run-ladder" class="btn">▶ Run Ladder (5 tests)</button>
+        <button id="btn-run-heat" class="btn btn-secondary">🔥 Heat Test (3m)</button>
+      </div>
+
+      <div class="picker-grid">
+        <div class="picker-item">
+          <label>Pixel Ratio</label>
+          <select id="sel-dpr">
+            <option value="1.0">1.0</option>
+            <option value="1.25" selected>1.25 (A15)</option>
+            <option value="1.5">1.5</option>
+          </select>
+        </div>
+        <div class="picker-item">
+          <label>Fog Far</label>
+          <select id="sel-fog">
+            <option value="60">60m</option>
+            <option value="90" selected>90m (A15)</option>
+            <option value="130">130m</option>
+          </select>
+        </div>
+        <div class="picker-item">
+          <label>Trees</label>
+          <select id="sel-trees">
+            <option value="500">500</option>
+            <option value="1500" selected>1500 (A15)</option>
+            <option value="3000">3000</option>
+          </select>
+        </div>
+        <div class="picker-item">
+          <label>Chunk Ring</label>
+          <select id="sel-ring">
+            <option value="1">1 (9 chunks)</option>
+            <option value="2" selected>2 (25 chunks)</option>
+            <option value="3">3 (49 chunks)</option>
+          </select>
+        </div>
+      </div>
+
+      <button id="btn-run-single" class="btn btn-secondary" style="width:100%;">Run Selected Scenario (10s)</button>
+
+      <div id="status-text" style="margin-top:10px; font-size:13px; font-weight:600; color:#b3004b;"></div>
+
+      <div id="result-card">
+        <h3 style="font-size:15px; margin-bottom:6px;">Benchmark Results</h3>
+        <div id="tier-badges" style="margin-bottom:8px;"></div>
+        <div id="result-summary" style="font-size:13px; line-height:1.4; margin-bottom:10px;"></div>
+        <button id="btn-copy-json" class="btn" style="width:100%;">📋 Copy JSON for PROGRESS.md</button>
+      </div>
+    </div>
+
+    <script type="module" src="/bench/bench.ts"></script>
+  </body>
+</html>
