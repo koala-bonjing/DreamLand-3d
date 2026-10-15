@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="128" fill="#ffd9ec"/>
+  <path d="M256 160 C210 110, 130 130, 130 200 C130 270, 256 360, 256 360 C256 360, 382 270, 382 200 C382 130, 302 110, 256 160 Z" fill="#ff3d97"/>
+  <!-- Gentle wing feathers -->
+  <path d="M130 200 C80 170, 40 220, 80 260 C110 290, 150 250, 150 250 Z" fill="#ffffff" opacity="0.85"/>
+  <path d="M382 200 C432 170, 472 220, 432 260 C402 290, 362 250, 362 250 Z" fill="#ffffff" opacity="0.85"/>
+</svg>

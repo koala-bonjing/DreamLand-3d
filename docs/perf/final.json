@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-10-15T06:10:00.000Z",
+  "project": "Dreamland 3D",
+  "targetDevice": "Samsung Galaxy A15 (Mali-G57 MC2)",
+  "deviceTierEstimate": "A15",
+  "recommendedScenario": {
+    "pixelRatio": 1.25,
+    "fogFar": 90,
+    "trees": 1500,
+    "chunkRing": 2
+  },
+  "tierStatus": {
+    "tier30fps": true,
+    "tier60fps": true
+  },
+  "metrics": {
+    "p50Ms": 16.7,
+    "p95Ms": 17.0,
+    "p99Ms": 17.1,
+    "avgFps": 59.9,
+    "drawCalls": 38,
+    "triangles": 48200,
+    "jsHeapMB": 12.4
+  },
+  "budgetPassed": true
+}

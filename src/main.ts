@@ -118,6 +118,9 @@ if (container) {
       selectedSkin = skinId;
       realtime.joinRoom(currentSeedName, selectedSkin);
     },
+    onFpsCapChange: (fps) => {
+      loop.setFpsCap(fps);
+    },
     onSeedChange: (newSeedName) => {
       currentSeedName = newSeedName;
       seed = hashSeed(newSeedName);
@@ -140,6 +143,7 @@ if (container) {
   const loop = new EngineLoop({
     fixedTimestep: 1 / 60,
     maxSubSteps: 5,
+    fpsCap: 30, // Default to A15 mode battery saver 30 FPS
     onUpdate: (dt) => {
       const now = performance.now();
 

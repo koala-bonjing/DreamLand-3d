@@ -1,8 +1,10 @@
 export interface MenuOptions {
   currentSeedName: string;
   currentSkin: string;
+  currentFpsCap?: number;
   onSeedChange: (newSeedName: string) => void;
   onSkinChange: (skinId: string) => void;
+  onFpsCapChange?: (fps: number) => void;
 }
 
 export const SKINS = [
@@ -19,7 +21,6 @@ export class GameMenu {
   public onToggle?: (open: boolean) => void;
 
   constructor(container: HTMLElement, options: MenuOptions) {
-
     this.overlay = document.createElement('div');
     this.overlay.style.position = 'absolute';
     this.overlay.style.top = '0';
@@ -46,12 +47,20 @@ export class GameMenu {
     modal.innerHTML = `
       <h2 style="color:#ff3d97; margin-bottom:14px; font-size:22px;">Dreamland 3D 🌸</h2>
       
-      <div style="margin-bottom:16px; text-align:left;">
+      <div style="margin-bottom:14px; text-align:left;">
         <label style="font-size:12px; font-weight:bold; color:#7a5062; text-transform:uppercase;">Character Skin</label>
         <div id="skin-picker" style="display:flex; gap:8px; margin-top:6px;"></div>
       </div>
 
-      <div style="margin-bottom:18px; text-align:left;">
+      <div style="margin-bottom:14px; text-align:left;">
+        <label style="font-size:12px; font-weight:bold; color:#7a5062; text-transform:uppercase;">Performance Mode</label>
+        <div style="display:flex; gap:8px; margin-top:6px;">
+          <button id="btn-fps-30" style="flex:1; padding:8px; border-radius:10px; border:2px solid #ff3d97; background:#ffe6f2; font-weight:bold; font-size:13px; cursor:pointer;">🔋 30 FPS</button>
+          <button id="btn-fps-60" style="flex:1; padding:8px; border-radius:10px; border:1px solid #ecccdb; background:white; font-weight:bold; font-size:13px; cursor:pointer;">⚡ 60 FPS</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px; text-align:left;">
         <label style="font-size:12px; font-weight:bold; color:#7a5062; text-transform:uppercase;">World Seed</label>
         <div style="display:flex; gap:6px; margin-top:6px;">
           <input id="input-seed" type="text" value="${options.currentSeedName}" style="flex:1; padding:10px 12px; border-radius:10px; border:1px solid #ecccdb; font-size:14px;" />
@@ -95,6 +104,25 @@ export class GameMenu {
       skinContainer.appendChild(btn);
     });
 
+    const btnFps30 = modal.querySelector('#btn-fps-30') as HTMLButtonElement;
+    const btnFps60 = modal.querySelector('#btn-fps-60') as HTMLButtonElement;
+
+    btnFps30.addEventListener('click', () => {
+      options.onFpsCapChange?.(30);
+      btnFps30.style.border = '2px solid #ff3d97';
+      btnFps30.style.background = '#ffe6f2';
+      btnFps60.style.border = '1px solid #ecccdb';
+      btnFps60.style.background = 'white';
+    });
+
+    btnFps60.addEventListener('click', () => {
+      options.onFpsCapChange?.(0); // 0 = uncapped 60+
+      btnFps60.style.border = '2px solid #ff3d97';
+      btnFps60.style.background = '#ffe6f2';
+      btnFps30.style.border = '1px solid #ecccdb';
+      btnFps30.style.background = 'white';
+    });
+
     const seedInput = modal.querySelector('#input-seed') as HTMLInputElement;
     const btnRand = modal.querySelector('#btn-rand-seed') as HTMLButtonElement;
     const btnShare = modal.querySelector('#btn-share-link') as HTMLButtonElement;
@@ -125,7 +153,6 @@ export class GameMenu {
           btnShare.textContent = '🔗 Copy World Share Link';
         }, 2000);
       } catch {
-        // Fallback
         btnShare.textContent = 'Manual copy needed';
       }
     });

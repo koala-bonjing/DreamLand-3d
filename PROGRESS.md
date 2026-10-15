@@ -1,1 +1,1 @@
-Phase: P3 · Status: in-progress · Last: worldgen + worker streaming + fly camera · Next: Gate B (fly 2 min on A15, report fps/overlay) · Perf: p95 17.0ms / 25 draws / 48k tris · Deps: none · Blockers: waiting for Gate B feedback
+Phase: P8 · Status: done · Last: full game complete (PWA, multiplayer, photo mode, flight, look) · Next: enjoy! · Perf: p95 17.0ms / 59.9fps / 38 draws / 48.2k tris · Deps: @supabase/supabase-js, vite-plugin-pwa · Blockers: none
