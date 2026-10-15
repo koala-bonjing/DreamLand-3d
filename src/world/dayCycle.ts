@@ -36,8 +36,9 @@ export class DayCycle {
     dirIntensity: 0.8
   };
 
-  constructor(initialTime = 15) {
+  constructor(initialTime = 15, cycleDuration = 80) {
     this.time = initialTime;
+    this.cycleDuration = cycleDuration;
     this.update(0);
   }
 

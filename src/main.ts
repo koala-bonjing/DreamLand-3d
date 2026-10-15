@@ -44,7 +44,7 @@ if (container) {
   });
 
   const scene = new THREE.Scene();
-  const dayCycle = new DayCycle(20);
+  const dayCycle = new DayCycle(20, 240);
 
   scene.background = dayCycle.current.fogColor;
   const fog = new THREE.Fog(dayCycle.current.fogColor.getHex(), 45, quality.config.fogFar);
@@ -206,4 +206,19 @@ if (container) {
   });
 
   loop.start();
+
+  (window as unknown as { __game: unknown }).__game = {
+    scene,
+    renderer,
+    loop,
+    quality,
+    chunks,
+    flightCamera,
+    controls,
+    dayCycle,
+    hud,
+    menu,
+    realtime,
+    hearts
+  };
 }

@@ -4,7 +4,7 @@ import { hash2D, heightAt } from './noise';
 import { CHUNK_SIZE } from './types';
 
 // Procedural Geometries
-function createTreeGeometry(): THREE.BufferGeometry {
+function createTreeGeometry(canopyColorHex: number): THREE.BufferGeometry {
   const trunk = new THREE.CylinderGeometry(0.25, 0.35, 1.6, 5);
   trunk.translate(0, 0.8, 0);
 
@@ -31,7 +31,7 @@ function createTreeGeometry(): THREE.BufferGeometry {
     pIdx += 3;
   }
 
-  const canopyCol = new THREE.Color(0xffffff); // Tinted per instance/material
+  const canopyCol = new THREE.Color(canopyColorHex);
   for (let i = 0; i < cPos.count; i++) {
     positions[pIdx] = cPos.getX(i);
     positions[pIdx + 1] = cPos.getY(i);
@@ -144,21 +144,28 @@ export class PropManager {
   private maxHouses = 30;
 
   constructor(scene: THREE.Scene) {
-    const treeGeom = createTreeGeometry();
+    const treePinkGeom = createTreeGeometry(PALETTE.treeCanopyPink);
+    const treeMintGeom = createTreeGeometry(PALETTE.treeCanopyMint);
+    const treeLilacGeom = createTreeGeometry(PALETTE.treeCanopyLilac);
     const flowerGeom = createFlowerGeometry();
     const houseGeom = createDreamhouseGeometry();
 
-    const matPink = new THREE.MeshLambertMaterial({ color: PALETTE.treeCanopyPink, flatShading: true });
-    const matMint = new THREE.MeshLambertMaterial({ color: PALETTE.treeCanopyMint, flatShading: true });
-    const matLilac = new THREE.MeshLambertMaterial({ color: PALETTE.treeCanopyLilac, flatShading: true });
+    const matTree = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
     const matFlower = new THREE.MeshLambertMaterial({ color: PALETTE.flowerPetal, flatShading: true });
     const matHouse = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
 
-    this.meshTreesPink = new THREE.InstancedMesh(treeGeom, matPink, this.maxTrees);
-    this.meshTreesMint = new THREE.InstancedMesh(treeGeom, matMint, this.maxTrees);
-    this.meshTreesLilac = new THREE.InstancedMesh(treeGeom, matLilac, this.maxTrees);
+    this.meshTreesPink = new THREE.InstancedMesh(treePinkGeom, matTree, this.maxTrees);
+    this.meshTreesMint = new THREE.InstancedMesh(treeMintGeom, matTree, this.maxTrees);
+    this.meshTreesLilac = new THREE.InstancedMesh(treeLilacGeom, matTree, this.maxTrees);
     this.meshFlowers = new THREE.InstancedMesh(flowerGeom, matFlower, this.maxFlowers);
     this.meshHouses = new THREE.InstancedMesh(houseGeom, matHouse, this.maxHouses);
+
+    // Disable frustum culling so instances distributed across chunk rings are never culled
+    this.meshTreesPink.frustumCulled = false;
+    this.meshTreesMint.frustumCulled = false;
+    this.meshTreesLilac.frustumCulled = false;
+    this.meshFlowers.frustumCulled = false;
+    this.meshHouses.frustumCulled = false;
 
     // Initial count is 0
     this.meshTreesPink.count = 0;
@@ -266,6 +273,8 @@ export class PropManager {
 
   public dispose(): void {
     this.meshTreesPink.geometry.dispose();
+    this.meshTreesMint.geometry.dispose();
+    this.meshTreesLilac.geometry.dispose();
     this.meshFlowers.geometry.dispose();
     this.meshHouses.geometry.dispose();
   }

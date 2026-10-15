@@ -57,3 +57,22 @@ export function getBiomeColor(normHeight: number, moisture: number): [number, nu
   }
   return COLOR_PEARL_PEAKS;
 }
+
+export function normalizeHeightForBiome(wy: number): number {
+  if (wy <= 0) {
+    return Math.max(0, 0.30 + (wy / 4.0) * 0.30);
+  }
+  if (wy <= 1.2) {
+    return 0.30 + (wy / 1.2) * 0.06;
+  }
+  if (wy <= 9.0) {
+    return 0.36 + ((wy - 1.2) / 7.8) * 0.22;
+  }
+  if (wy <= 15.0) {
+    return 0.58 + ((wy - 9.0) / 6.0) * 0.16;
+  }
+  if (wy <= 21.0) {
+    return 0.74 + ((wy - 15.0) / 6.0) * 0.14;
+  }
+  return Math.min(1.0, 0.88 + ((wy - 21.0) / 6.0) * 0.12);
+}

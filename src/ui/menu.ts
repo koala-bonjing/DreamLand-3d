@@ -48,12 +48,12 @@ export class GameMenu {
       <h2 style="color:#ff3d97; margin-bottom:14px; font-size:22px;">Dreamland 3D 🌸</h2>
       
       <div style="margin-bottom:14px; text-align:left;">
-        <label style="font-size:12px; font-weight:bold; color:#7a5062; text-transform:uppercase;">Character Skin</label>
+        <span style="display:block; font-size:12px; font-weight:bold; color:#7a5062; text-transform:uppercase;">Character Skin</span>
         <div id="skin-picker" style="display:flex; gap:8px; margin-top:6px;"></div>
       </div>
 
       <div style="margin-bottom:14px; text-align:left;">
-        <label style="font-size:12px; font-weight:bold; color:#7a5062; text-transform:uppercase;">Performance Mode</label>
+        <span style="display:block; font-size:12px; font-weight:bold; color:#7a5062; text-transform:uppercase;">Performance Mode</span>
         <div style="display:flex; gap:8px; margin-top:6px;">
           <button id="btn-fps-30" style="flex:1; padding:8px; border-radius:10px; border:2px solid #ff3d97; background:#ffe6f2; font-weight:bold; font-size:13px; cursor:pointer;">🔋 30 FPS</button>
           <button id="btn-fps-60" style="flex:1; padding:8px; border-radius:10px; border:1px solid #ecccdb; background:white; font-weight:bold; font-size:13px; cursor:pointer;">⚡ 60 FPS</button>
@@ -61,10 +61,10 @@ export class GameMenu {
       </div>
 
       <div style="margin-bottom:16px; text-align:left;">
-        <label style="font-size:12px; font-weight:bold; color:#7a5062; text-transform:uppercase;">World Seed</label>
+        <label for="input-seed" style="font-size:12px; font-weight:bold; color:#7a5062; text-transform:uppercase;">World Seed</label>
         <div style="display:flex; gap:6px; margin-top:6px;">
-          <input id="input-seed" type="text" value="${options.currentSeedName}" style="flex:1; padding:10px 12px; border-radius:10px; border:1px solid #ecccdb; font-size:14px;" />
-          <button id="btn-rand-seed" style="padding:10px 14px; border-radius:10px; border:none; background:#ffe4ef; font-size:16px; cursor:pointer;">🎲</button>
+          <input id="input-seed" aria-label="World Seed" type="text" value="${options.currentSeedName}" style="flex:1; padding:10px 12px; border-radius:10px; border:1px solid #ecccdb; font-size:14px;" />
+          <button id="btn-rand-seed" aria-label="Randomize World Seed" style="padding:10px 14px; border-radius:10px; border:none; background:#ffe4ef; font-size:16px; cursor:pointer;">🎲</button>
         </div>
       </div>
 
@@ -83,6 +83,7 @@ export class GameMenu {
       const btn = document.createElement('button');
       btn.textContent = `${skin.icon}`;
       btn.title = skin.name;
+      btn.setAttribute('aria-label', skin.name);
       btn.style.flex = '1';
       btn.style.padding = '10px';
       btn.style.borderRadius = '12px';

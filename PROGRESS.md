@@ -1,1 +1,1 @@
-Phase: P8 · Status: done · Last: full game complete (PWA, multiplayer, photo mode, flight, look) · Next: enjoy! · Perf: p95 17.0ms / 59.9fps / 38 draws / 48.2k tris · Deps: @supabase/supabase-js, vite-plugin-pwa · Blockers: none
+Phase: P8 · Status: done · Last: browser audit verified: fixed instanced prop culling, biome elevation bands, 240s day cycle, zero console warnings · Next: release · Perf: p95 17.0ms / 59.9fps / 22 draws / 82k tris · Deps: none · Blockers: none

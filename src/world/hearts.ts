@@ -80,6 +80,7 @@ export class HeartManager {
 
     this.instancedMesh = new THREE.InstancedMesh(heartGeom, heartMat, this.maxHearts);
     this.instancedMesh.count = 0;
+    this.instancedMesh.frustumCulled = false;
     scene.add(this.instancedMesh);
 
     // Sparkle burst points
