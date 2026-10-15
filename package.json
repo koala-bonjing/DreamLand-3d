@@ -13,6 +13,7 @@
     "check": "npm run typecheck && npm run lint && npm run test && npm run build && node scripts/check-budget.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.3",
     "three": "^0.170.0"
   },
   "devDependencies": {

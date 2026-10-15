@@ -12,6 +12,7 @@ import { FlightCamera } from './player/camera';
 import { GameHud } from './ui/hud';
 import { PhotoMode } from './ui/photoMode';
 import { GameMenu } from './ui/menu';
+import { RealtimeManager } from './net/realtime';
 import { hashSeed } from './world/noise';
 
 const container = document.getElementById('app');
@@ -22,7 +23,7 @@ if (container) {
   canvas.style.display = 'block';
   container.appendChild(canvas);
 
-  // Overlay for fly-through metrics (hidden by default in production)
+  // Overlay for fly-through metrics (A15 monitoring)
   const overlay = document.createElement('div');
   overlay.style.position = 'absolute';
   overlay.style.bottom = '12px';
@@ -81,6 +82,11 @@ if (container) {
   const controls = new FlightControls(container);
   const flightCamera = new FlightCamera(renderer.camera);
 
+  // Multiplayer Realtime (Phase 7)
+  let selectedSkin = 'dove';
+  const realtime = new RealtimeManager(scene, selectedSkin);
+  realtime.joinRoom(currentSeedName, selectedSkin);
+
   // UI Systems: HUD, Photo Mode, Menu
   const photoMode = new PhotoMode(container, canvas);
   const hud = new GameHud(container, {
@@ -96,6 +102,10 @@ if (container) {
     }
   };
 
+  realtime.onPeerStatusChange = (present) => {
+    hud.showToast(present ? '🕊️ Companion joined your world!' : 'Companion left the world.');
+  };
+
   photoMode.onToggle = (active) => {
     hud.setVisible(!active);
     overlay.style.display = active ? 'none' : 'block';
@@ -103,9 +113,10 @@ if (container) {
 
   const menu = new GameMenu(container, {
     currentSeedName,
-    currentSkin: 'dove',
-    onSkinChange: (_skinId) => {
-      // Skin change hook (Phase 7 multiplayer/companion sync)
+    currentSkin: selectedSkin,
+    onSkinChange: (skinId) => {
+      selectedSkin = skinId;
+      realtime.joinRoom(currentSeedName, selectedSkin);
     },
     onSeedChange: (newSeedName) => {
       currentSeedName = newSeedName;
@@ -118,6 +129,7 @@ if (container) {
       });
       flightCamera.position.set(0, 18, 0);
       flightCamera.velocity.set(0, 0, 0);
+      realtime.joinRoom(currentSeedName, selectedSkin);
     }
   });
 
@@ -129,6 +141,8 @@ if (container) {
     fixedTimestep: 1 / 60,
     maxSubSteps: 5,
     onUpdate: (dt) => {
+      const now = performance.now();
+
       flightCamera.update(dt, controls, seed);
 
       dayCycle.update(dt);
@@ -146,6 +160,17 @@ if (container) {
       chunks.update(flightCamera.position.x, flightCamera.position.z);
       hearts.updateChunks(chunks.getActiveChunks(), seed);
       hearts.update(dt, flightCamera.position.x, flightCamera.position.y, flightCamera.position.z);
+
+      // Multiplayer synchronization
+      realtime.updatePlayer(
+        flightCamera.position.x,
+        flightCamera.position.y,
+        flightCamera.position.z,
+        flightCamera.yaw,
+        flightCamera.pitch,
+        now
+      );
+      realtime.update(dt, now);
 
       hud.setCompass(flightCamera.yaw);
     },
