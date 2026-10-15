@@ -47,8 +47,9 @@ self.onmessage = (e: MessageEvent<ChunkBuildRequest>) => {
       positions[offset + 1] = wy;
       positions[offset + 2] = lz;
 
-      // Color based on height and moisture
-      const normH = Math.min(Math.max((wy + 4) / 28, 0), 1);
+      // Color based on height and moisture:
+      // wy ranges from -4 to 22. Map to [0, 1] for biome coloring:
+      const normH = Math.min(Math.max((wy + 2) / 20, 0), 1);
       const moist = moistureAt(wx, wz, seed);
       const rgb = getBiomeColor(normH, moist);
 

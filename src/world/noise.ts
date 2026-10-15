@@ -12,12 +12,13 @@ export function hashSeed(str: string): number {
 }
 
 /**
- * Fast 2D integer hash returning [0, 1)
+ * Fast 2D integer hash returning uniform [0, 1) using Murmur3 bit-mixing
  */
 export function hash2D(x: number, z: number, seed: number): number {
-  let n = Math.imul(x, 374761393) + Math.imul(z, 668265263) + seed;
-  n = (n ^ (n >> 13)) * 1274126177;
-  return ((n ^ (n >> 16)) >>> 0) / 4294967296;
+  let n = (Math.imul(x, 0x1f1f1f1f) ^ Math.imul(z, 0x5b5b5b5b) ^ seed) >>> 0;
+  n = Math.imul(n ^ (n >>> 16), 0x85ebca6b) >>> 0;
+  n = Math.imul(n ^ (n >>> 13), 0xc2b2ae35) >>> 0;
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
 }
 
 /**
@@ -68,18 +69,17 @@ export function fbm2D(x: number, z: number, seed: number, octaves = 3): number {
  * Scale: 64m chunks. Output height in world units (meters).
  */
 export function heightAt(wx: number, wz: number, seed: number): number {
-  // Base rolling hills (freq 0.007)
-  const base = fbm2D(wx * 0.007, wz * 0.007, seed, 3);
+  // Base rolling landscape (frequency 0.006)
+  const base = fbm2D(wx * 0.006, wz * 0.006, seed, 3);
 
-  // Mountain ridges / peak modulation (freq 0.018)
-  const mountainSeed = (seed + 7919) >>> 0;
-  const ridge = fbm2D(wx * 0.018, wz * 0.018, mountainSeed, 3);
+  // Ridges and billows (frequency 0.015)
+  const ridgeSeed = (seed + 7919) >>> 0;
+  const ridge = fbm2D(wx * 0.015, wz * 0.015, ridgeSeed, 2);
 
-  // Combine into height range [-4m (water level), +24m (peaks)]
-  const elevation = Math.pow(base, 1.4);
-  const height = (elevation - 0.28) * 26 + (ridge - 0.5) * 6;
+  // Map into height range: water at <= 0m, pink meadows at 4-12m, hills at 12-20m, peaks at >20m
+  const elevation = (base - 0.28) * 26 + (ridge - 0.5) * 8;
 
-  return Number(height.toFixed(3));
+  return Number(elevation.toFixed(3));
 }
 
 /**
@@ -87,5 +87,5 @@ export function heightAt(wx: number, wz: number, seed: number): number {
  */
 export function moistureAt(wx: number, wz: number, seed: number): number {
   const moistureSeed = (seed + 104729) >>> 0;
-  return fbm2D(wx * 0.005, wz * 0.005, moistureSeed, 2);
+  return fbm2D(wx * 0.004, wz * 0.004, moistureSeed, 2);
 }
