@@ -6,6 +6,7 @@ import {
   ChunkBuildRequest,
   ChunkBuildResponse
 } from './types';
+import { PropManager } from './props';
 
 export interface ChunkManagerOptions {
   scene: THREE.Scene;
@@ -47,6 +48,7 @@ export class ChunkManager {
   public scene: THREE.Scene;
   public seed: number;
   public ringRadius: number;
+  public props: PropManager;
 
   private worker: Worker | null = null;
   private sharedMaterial: THREE.MeshLambertMaterial;
@@ -73,6 +75,7 @@ export class ChunkManager {
 
     const indices = createSharedChunkIndices();
     this.sharedIndexAttr = new THREE.BufferAttribute(indices, 1);
+    this.props = new PropManager(this.scene);
 
     if (typeof Worker !== 'undefined') {
       const url = options.workerUrl ?? new URL('./worker.ts', import.meta.url);
@@ -207,10 +210,15 @@ export class ChunkManager {
       this.loadedChunks.set(key, { cx: res.cx, cz: res.cz, mesh });
       builds++;
     }
+
+    if (builds > 0) {
+      this.props.updateChunks(Array.from(this.loadedChunks.values()), this.seed);
+    }
   }
 
   private pruneDistantChunks(centerCx: number, centerCz: number): void {
     const unloadDist = this.ringRadius + 1; // Hysteresis buffer
+    let pruned = 0;
 
     for (const [key, chunk] of this.loadedChunks.entries()) {
       const dx = Math.abs(chunk.cx - centerCx);
@@ -230,7 +238,12 @@ export class ChunkManager {
 
         geom.dispose();
         this.loadedChunks.delete(key);
+        pruned++;
       }
+    }
+
+    if (pruned > 0) {
+      this.props.updateChunks(Array.from(this.loadedChunks.values()), this.seed);
     }
   }
 
@@ -254,5 +267,6 @@ export class ChunkManager {
     this.incomingQueue = [];
     this.bufferPool = [];
     this.sharedMaterial.dispose();
+    this.props.dispose();
   }
 }

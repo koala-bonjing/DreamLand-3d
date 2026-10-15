@@ -3,8 +3,10 @@ import { EngineRenderer } from './core/renderer';
 import { EngineLoop } from './core/loop';
 import { QualityManager } from './core/quality';
 import { ChunkManager } from './world/chunkManager';
+import { DayCycle } from './world/dayCycle';
+import { SkyDome, CloudManager } from './world/sky';
+import { WaterPlane } from './world/water';
 import { hashSeed, heightAt } from './world/noise';
-import { PALETTE } from './config/palette';
 
 const container = document.getElementById('app');
 if (container) {
@@ -35,14 +37,30 @@ if (container) {
   });
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(PALETTE.fog);
-  scene.fog = new THREE.Fog(PALETTE.fog, 45, 100);
+  const dayCycle = new DayCycle(20); // Start in pleasant morning daylight
 
-  // Lighting: Hemisphere for soft ambient + Directional for low-poly facet shading
-  const hemi = new THREE.HemisphereLight(PALETTE.skyZenithDay, PALETTE.grass, 0.9);
+  scene.background = dayCycle.current.fogColor;
+  const fog = new THREE.Fog(dayCycle.current.fogColor.getHex(), 45, quality.config.fogFar);
+  scene.fog = fog;
+
+  // Sky dome (1 draw call)
+  const sky = new SkyDome(scene, dayCycle.current.skyZenith, dayCycle.current.skyHorizon);
+
+  // Cloud sprites (≤ 8 transparent sprites)
+  const clouds = new CloudManager(scene, 8);
+
+  // Water shimmer plane (1 draw call)
+  const water = new WaterPlane(scene, 320);
+
+  // Lighting
+  const hemi = new THREE.HemisphereLight(
+    dayCycle.current.hemiSky,
+    dayCycle.current.hemiGround,
+    0.95
+  );
   scene.add(hemi);
 
-  const dirLight = new THREE.DirectionalLight(0xfff5ea, 0.7);
+  const dirLight = new THREE.DirectionalLight(dayCycle.current.dirColor, dayCycle.current.dirIntensity);
   dirLight.position.set(40, 60, 20);
   scene.add(dirLight);
 
@@ -79,6 +97,19 @@ if (container) {
       const groundY = heightAt(flyState.x, flyState.z, seed);
       flyState.y = Math.max(groundY + 12.0, 16.0);
 
+      // Update atmosphere & day/night cycle
+      dayCycle.update(dt);
+      fog.color.copy(dayCycle.current.fogColor);
+      scene.background = dayCycle.current.fogColor;
+      sky.update(flyState.x, flyState.z, dayCycle.current.skyZenith, dayCycle.current.skyHorizon);
+      clouds.update(dt, flyState.x, flyState.z);
+      water.update(dt, flyState.x, flyState.z);
+
+      hemi.color.copy(dayCycle.current.hemiSky);
+      hemi.groundColor.copy(dayCycle.current.hemiGround);
+      dirLight.color.copy(dayCycle.current.dirColor);
+      dirLight.intensity = dayCycle.current.dirIntensity;
+
       chunks.update(flyState.x, flyState.z);
     },
     onRender: (_alpha) => {
@@ -106,7 +137,8 @@ if (container) {
         const ms = (elapsed / frameCount).toFixed(1);
         const calls = renderer.renderer.info.render.calls;
         const tris = renderer.renderer.info.render.triangles;
-        overlay.textContent = `FPS: ${fps} (${ms}ms) | Chunks: ${chunks.getLoadedCount()} | Draws: ${calls} | Tris: ${tris.toLocaleString()} | Pos: (${flyState.x.toFixed(0)}, ${flyState.y.toFixed(0)}, ${flyState.z.toFixed(0)})`;
+        const timeOfDay = (dayCycle.getProgress() * 24).toFixed(1);
+        overlay.textContent = `FPS: ${fps} (${ms}ms) | Day: ${timeOfDay}h | Chunks: ${chunks.getLoadedCount()} | Draws: ${calls} | Tris: ${tris.toLocaleString()}`;
         frameCount = 0;
         lastOverlayTime = now;
       }
