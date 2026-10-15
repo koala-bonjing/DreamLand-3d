@@ -23,6 +23,7 @@ void main() {
 export class SkyDome {
   public mesh: THREE.Mesh;
   private material: THREE.ShaderMaterial;
+  public cloudManagerRef?: CloudManager;
 
   constructor(scene: THREE.Scene, initialTop: THREE.Color, initialBottom: THREE.Color) {
     const geometry = new THREE.SphereGeometry(220, 16, 12);
@@ -48,94 +49,244 @@ export class SkyDome {
     this.material.uniforms.bottomColor.value.copy(bottom);
   }
 
+  public getCloudCount(): number {
+    return this.cloudManagerRef ? this.cloudManagerRef.getCloudCount() : 50;
+  }
+
+  public getPetalCount(): number {
+    return this.cloudManagerRef ? this.cloudManagerRef.getPetalCount() : 250;
+  }
+
   public dispose(): void {
     this.mesh.geometry.dispose();
     this.material.dispose();
   }
 }
 
-function createCloudTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
-  const ctx = canvas.getContext('2d');
-  if (ctx) {
-    ctx.clearRect(0, 0, 64, 64);
-    const grad = ctx.createRadialGradient(32, 32, 4, 32, 32, 28);
-    grad.addColorStop(0, 'rgba(255, 240, 248, 0.85)');
-    grad.addColorStop(0.5, 'rgba(255, 230, 242, 0.55)');
-    grad.addColorStop(1, 'rgba(255, 230, 242, 0)');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(32, 32, 28, 0, Math.PI * 2);
-    ctx.fill();
+function createVoxelCloudGeometry(): THREE.BufferGeometry {
+  const boxes = [
+    { w: 18, h: 4.5, d: 11, x: 0, y: 0, z: 0 },
+    { w: 12, h: 3.8, d: 9, x: -6, y: -0.2, z: 2 },
+    { w: 13, h: 3.6, d: 9, x: 6, y: -0.3, z: -2 },
+    { w: 9, h: 3.2, d: 8, x: 1, y: 2.8, z: 0 }
+  ];
+
+  let totalVerts = 0;
+  let totalIndices = 0;
+  const geos = boxes.map((b) => {
+    const g = new THREE.BoxGeometry(b.w, b.h, b.d);
+    g.translate(b.x, b.y, b.z);
+    totalVerts += g.attributes.position.count;
+    totalIndices += g.index!.count;
+    return g;
+  });
+
+  const pos = new Float32Array(totalVerts * 3);
+  const norm = new Float32Array(totalVerts * 3);
+  const indices = new Uint16Array(totalIndices);
+
+  let vOff = 0;
+  let iOff = 0;
+  for (const g of geos) {
+    const p = g.attributes.position;
+    const n = g.attributes.normal;
+    const idx = g.index!;
+
+    for (let i = 0; i < p.count; i++) {
+      const o = (vOff + i) * 3;
+      pos[o] = p.getX(i);
+      pos[o + 1] = p.getY(i);
+      pos[o + 2] = p.getZ(i);
+      norm[o] = n.getX(i);
+      norm[o + 1] = n.getY(i);
+      norm[o + 2] = n.getZ(i);
+    }
+    for (let i = 0; i < idx.count; i++) {
+      indices[iOff + i] = idx.getX(i) + vOff;
+    }
+    vOff += p.count;
+    iOff += idx.count;
+    g.dispose();
   }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.generateMipmaps = false;
-  tex.minFilter = THREE.LinearFilter;
-  return tex;
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('normal', new THREE.BufferAttribute(norm, 3));
+  geo.setIndex(new THREE.BufferAttribute(indices, 1));
+  return geo;
 }
 
 export class CloudManager {
-  private clouds: THREE.Sprite[] = [];
-  private group = new THREE.Group();
-  private texture: THREE.CanvasTexture | null = null;
-  private material: THREE.SpriteMaterial | null = null;
+  private cloudMesh: THREE.InstancedMesh;
+  private cloudCount = 50;
+  private cloudPositions: Float32Array; // x, y, z, scale per cloud
+  private dummy = new THREE.Object3D();
 
-  constructor(scene: THREE.Scene, count = 8) {
-    const safeCount = Math.min(count, 10); // A15 limit: ≤ 10 transparent sprites
+  // Falling Sakura / Sparkle Petals
+  private petalPoints: THREE.Points;
+  private petalCount = 250;
+  private petalPositions: Float32Array;
+  private petalPhases: Float32Array;
+  private petalSpeeds: Float32Array;
+  private animTime = 0;
 
-    if (typeof document !== 'undefined') {
-      this.texture = createCloudTexture();
-      this.material = new THREE.SpriteMaterial({
-        map: this.texture,
-        transparent: true,
-        opacity: 0.65,
-        depthWrite: false
-      });
+  constructor(scene: THREE.Scene, _count = 50) {
+    const cloudGeom = createVoxelCloudGeometry();
+    const cloudMat = new THREE.MeshLambertMaterial({
+      color: 0xfff0f8,
+      flatShading: true
+    });
 
-      for (let i = 0; i < safeCount; i++) {
-        const sprite = new THREE.Sprite(this.material);
-        const scale = 24 + (i % 3) * 8;
-        sprite.scale.set(scale, scale * 0.45, 1);
-        sprite.position.set(
-          (Math.sin(i * 1.3) * 120),
-          38 + (i % 4) * 3,
-          (Math.cos(i * 1.3) * 120)
-        );
-        this.clouds.push(sprite);
-        this.group.add(sprite);
-      }
+    this.cloudMesh = new THREE.InstancedMesh(cloudGeom, cloudMat, this.cloudCount);
+    this.cloudMesh.frustumCulled = false;
+
+    this.cloudPositions = new Float32Array(this.cloudCount * 4);
+    for (let i = 0; i < this.cloudCount; i++) {
+      const angle = (i / this.cloudCount) * Math.PI * 2 + (i % 5);
+      const dist = 30 + (i % 7) * 18;
+      const x = Math.sin(angle) * dist;
+      const z = Math.cos(angle) * dist;
+      const y = 32 + (i % 6) * 2.2;
+      const scale = 0.8 + (i % 4) * 0.25;
+
+      const offset = i * 4;
+      this.cloudPositions[offset + 0] = x;
+      this.cloudPositions[offset + 1] = y;
+      this.cloudPositions[offset + 2] = z;
+      this.cloudPositions[offset + 3] = scale;
+
+      this.dummy.position.set(x, y, z);
+      this.dummy.scale.setScalar(scale);
+      this.dummy.updateMatrix();
+      this.cloudMesh.setMatrixAt(i, this.dummy.matrix);
     }
-    scene.add(this.group);
+    this.cloudMesh.instanceMatrix.needsUpdate = true;
+    scene.add(this.cloudMesh);
+
+    // Sakura / Sparkle particle system
+    const petalGeom = new THREE.BufferGeometry();
+    this.petalPositions = new Float32Array(this.petalCount * 3);
+    const petalColors = new Float32Array(this.petalCount * 3);
+    this.petalPhases = new Float32Array(this.petalCount);
+    this.petalSpeeds = new Float32Array(this.petalCount);
+
+    const petalPalette = [
+      new THREE.Color(0xff85c0), // Rose pink
+      new THREE.Color(0xffffff), // Sparkly white
+      new THREE.Color(0xffe66d)  // Golden sparkle
+    ];
+
+    for (let i = 0; i < this.petalCount; i++) {
+      const p = i * 3;
+      this.petalPositions[p + 0] = (Math.random() - 0.5) * 40;
+      this.petalPositions[p + 1] = 10 + (Math.random() - 0.5) * 25;
+      this.petalPositions[p + 2] = (Math.random() - 0.5) * 40;
+
+      const col = petalPalette[i % petalPalette.length];
+      petalColors[p + 0] = col.r;
+      petalColors[p + 1] = col.g;
+      petalColors[p + 2] = col.b;
+
+      this.petalPhases[i] = i * 0.45;
+      this.petalSpeeds[i] = 1.2 + (i % 4) * 0.4;
+    }
+
+    petalGeom.setAttribute('position', new THREE.BufferAttribute(this.petalPositions, 3));
+    petalGeom.setAttribute('color', new THREE.BufferAttribute(petalColors, 3));
+
+    const petalMat = new THREE.PointsMaterial({
+      size: 0.7,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false
+    });
+
+    this.petalPoints = new THREE.Points(petalGeom, petalMat);
+    this.petalPoints.frustumCulled = false;
+    scene.add(this.petalPoints);
   }
 
-  public update(dt: number, cameraX: number, cameraZ: number): void {
-    const windSpeed = 3.5; // m/s
-    const radius = 130;
+  public getCloudCount(): number {
+    return this.cloudCount;
+  }
 
-    for (let i = 0; i < this.clouds.length; i++) {
-      const c = this.clouds[i];
-      c.position.x += windSpeed * dt;
+  public getPetalCount(): number {
+    return this.petalCount;
+  }
 
-      // Wrap around camera
-      if (c.position.x - cameraX > radius) {
-        c.position.x -= radius * 2;
-      } else if (c.position.x - cameraX < -radius) {
-        c.position.x += radius * 2;
+  public update(dt: number, cameraX: number, cameraZ: number, playerY = 16): void {
+    this.animTime += dt;
+    const windSpeed = 3.0; // m/s
+    const radius = 160;
+
+    // 1. Drift Voxel Clouds
+    for (let i = 0; i < this.cloudCount; i++) {
+      const o = i * 4;
+      let x = this.cloudPositions[o + 0] + windSpeed * dt;
+      const y = this.cloudPositions[o + 1];
+      let z = this.cloudPositions[o + 2];
+      const scale = this.cloudPositions[o + 3];
+
+      // Wrap around player radius (160 units)
+      if (x - cameraX > radius) {
+        x -= radius * 2;
+      } else if (x - cameraX < -radius) {
+        x += radius * 2;
       }
 
-      if (c.position.z - cameraZ > radius) {
-        c.position.z -= radius * 2;
-      } else if (c.position.z - cameraZ < -radius) {
-        c.position.z += radius * 2;
+      if (z - cameraZ > radius) {
+        z -= radius * 2;
+      } else if (z - cameraZ < -radius) {
+        z += radius * 2;
+      }
+
+      this.cloudPositions[o + 0] = x;
+      this.cloudPositions[o + 2] = z;
+
+      this.dummy.position.set(x, y, z);
+      this.dummy.scale.setScalar(scale);
+      this.dummy.updateMatrix();
+      this.cloudMesh.setMatrixAt(i, this.dummy.matrix);
+    }
+    this.cloudMesh.instanceMatrix.needsUpdate = true;
+
+    // 2. Flutter Falling Sakura Petals
+    const posAttr = this.petalPoints.geometry.attributes.position as THREE.BufferAttribute;
+    const posArray = this.petalPositions;
+
+    for (let i = 0; i < this.petalCount; i++) {
+      const p = i * 3;
+      const speed = this.petalSpeeds[i];
+      const phase = this.petalPhases[i];
+
+      posArray[p + 1] -= speed * dt;
+      posArray[p + 0] += Math.sin(this.animTime * 2.2 + phase) * 0.04;
+      posArray[p + 2] += Math.cos(this.animTime * 1.8 + phase) * 0.04;
+
+      // Wrap back to top of volume around player
+      if (posArray[p + 1] < playerY - 12) {
+        posArray[p + 1] = playerY + 13;
+      }
+      if (posArray[p + 0] - cameraX > 20) {
+        posArray[p + 0] -= 40;
+      } else if (posArray[p + 0] - cameraX < -20) {
+        posArray[p + 0] += 40;
+      }
+
+      if (posArray[p + 2] - cameraZ > 20) {
+        posArray[p + 2] -= 40;
+      } else if (posArray[p + 2] - cameraZ < -20) {
+        posArray[p + 2] += 40;
       }
     }
+    posAttr.needsUpdate = true;
   }
 
   public dispose(): void {
-    if (this.material) this.material.dispose();
-    if (this.texture) this.texture.dispose();
-    this.clouds = [];
+    this.cloudMesh.geometry.dispose();
+    (this.cloudMesh.material as THREE.Material).dispose();
+    this.petalPoints.geometry.dispose();
+    (this.petalPoints.material as THREE.Material).dispose();
   }
 }

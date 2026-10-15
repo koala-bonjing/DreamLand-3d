@@ -14,6 +14,7 @@ import { PhotoMode } from './ui/photoMode';
 import { GameMenu } from './ui/menu';
 import { RealtimeManager } from './net/realtime';
 import { hashSeed } from './world/noise';
+import { getBiomeAt } from './world/biomes';
 
 const container = document.getElementById('app');
 if (container) {
@@ -81,6 +82,8 @@ if (container) {
   // Controls & Camera
   const controls = new FlightControls(container);
   const flightCamera = new FlightCamera(renderer.camera);
+  scene.add(flightCamera.bird.group);
+  sky.cloudManagerRef = clouds;
 
   // Multiplayer Realtime (Phase 7)
   let selectedSkin = 'dove';
@@ -89,6 +92,9 @@ if (container) {
 
   // UI Systems: HUD, Photo Mode, Menu
   const photoMode = new PhotoMode(container, canvas);
+  photoMode.onToggleBird = (visible) => {
+    flightCamera.bird.setVisible(visible);
+  };
   const hud = new GameHud(container, {
     onPhotoClick: () => photoMode.toggle(true),
     onMenuClick: () => menu.toggle(true)
@@ -153,7 +159,7 @@ if (container) {
       fog.color.copy(dayCycle.current.fogColor);
       scene.background = dayCycle.current.fogColor;
       sky.update(flightCamera.position.x, flightCamera.position.z, dayCycle.current.skyZenith, dayCycle.current.skyHorizon);
-      clouds.update(dt, flightCamera.position.x, flightCamera.position.z);
+      clouds.update(dt, flightCamera.position.x, flightCamera.position.z, flightCamera.position.y);
       water.update(dt, flightCamera.position.x, flightCamera.position.z);
 
       hemi.color.copy(dayCycle.current.hemiSky);
@@ -177,6 +183,28 @@ if (container) {
       realtime.update(dt, now);
 
       hud.setCompass(flightCamera.yaw);
+
+      // Automated testing and browser verification telemetry hook
+      (window as unknown as { __DREAMLAND_DEBUG__: unknown }).__DREAMLAND_DEBUG__ = {
+        birdPosition: {
+          x: flightCamera.bird.group.position.x,
+          y: flightCamera.bird.group.position.y,
+          z: flightCamera.bird.group.position.z
+        },
+        cameraPosition: {
+          x: renderer.camera.position.x,
+          y: renderer.camera.position.y,
+          z: renderer.camera.position.z
+        },
+        birdVisibleInScene: Boolean(flightCamera.bird.group.parent),
+        isFlying: !controls.isGrounded,
+        currentBiome: getBiomeAt(flightCamera.bird.group.position.x, flightCamera.bird.group.position.z, seed),
+        loadedChunks: chunks.getLoadedChunkCount?.() ?? 0,
+        landmarkCount: chunks.props.getLandmarkCount?.() ?? 0,
+        cloudCount: sky.getCloudCount?.() ?? 0,
+        petalCount: sky.getPetalCount?.() ?? 0,
+        drawCalls: renderer.renderer.info.render.calls
+      };
     },
     onRender: (_alpha) => {
       const now = performance.now();
@@ -207,18 +235,27 @@ if (container) {
 
   loop.start();
 
+  (window as unknown as { getBiomeAt: unknown }).getBiomeAt = (x: number, z: number) =>
+    getBiomeAt(x, z, seed);
+
   (window as unknown as { __game: unknown }).__game = {
     scene,
     renderer,
     loop,
     quality,
     chunks,
+    chunkManager: chunks,
+    propsManager: chunks.props,
     flightCamera,
+    bird: flightCamera.bird.group,
+    sky,
+    clouds,
     controls,
     dayCycle,
     hud,
     menu,
     realtime,
-    hearts
+    hearts,
+    getBiomeAt: (x: number, z: number) => getBiomeAt(x, z, seed)
   };
 }

@@ -46,10 +46,31 @@ export class PhotoMode {
     this.snapButton.addEventListener('click', () => this.capture());
     this.exitButton.addEventListener('click', () => this.toggle(false));
 
+    this.birdButton = document.createElement('button');
+    this.birdButton.textContent = '🕊️ Hide Bird';
+    this.birdButton.style.padding = '12px 18px';
+    this.birdButton.style.borderRadius = '24px';
+    this.birdButton.style.border = 'none';
+    this.birdButton.style.background = 'rgba(255, 255, 255, 0.85)';
+    this.birdButton.style.color = '#333';
+    this.birdButton.style.fontWeight = 'bold';
+    this.birdButton.style.cursor = 'pointer';
+
+    this.birdButton.addEventListener('click', () => {
+      this.birdVisible = !this.birdVisible;
+      this.birdButton.textContent = this.birdVisible ? '🕊️ Hide Bird' : '🕊️ Show Bird';
+      this.onToggleBird?.(this.birdVisible);
+    });
+
     this.uiContainer.appendChild(this.snapButton);
+    this.uiContainer.appendChild(this.birdButton);
     this.uiContainer.appendChild(this.exitButton);
     this.container.appendChild(this.uiContainer);
   }
+
+  public birdVisible = true;
+  private birdButton: HTMLElement;
+  public onToggleBird?: (visible: boolean) => void;
 
   public toggle(active?: boolean): void {
     this.isActive = active !== undefined ? active : !this.isActive;

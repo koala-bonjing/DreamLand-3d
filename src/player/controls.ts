@@ -4,15 +4,21 @@ export interface ControlState {
   yawDelta: number; // radians
   pitchDelta: number; // radians
   boost: boolean;
+  ascend: boolean;
+  descend: boolean;
 }
 
 export class FlightControls {
+  public isGrounded = false;
+
   public state: ControlState = {
     forward: 0,
     strafe: 0,
     yawDelta: 0,
     pitchDelta: 0,
-    boost: false
+    boost: false,
+    ascend: false,
+    descend: false
   };
 
   private keys = new Set<string>();
@@ -69,12 +75,12 @@ export class FlightControls {
     this.boostButton.style.position = 'absolute';
     this.boostButton.style.bottom = '32px';
     this.boostButton.style.right = '32px';
-    this.boostButton.style.width = '68px';
-    this.boostButton.style.height = '68px';
+    this.boostButton.style.width = '64px';
+    this.boostButton.style.height = '64px';
     this.boostButton.style.borderRadius = '50%';
     this.boostButton.style.background = 'rgba(255, 255, 255, 0.75)';
     this.boostButton.style.border = '3px solid #ff4d94';
-    this.boostButton.style.fontSize = '26px';
+    this.boostButton.style.fontSize = '24px';
     this.boostButton.style.cursor = 'pointer';
     this.boostButton.style.zIndex = '20';
     this.boostButton.style.touchAction = 'none';
@@ -90,6 +96,62 @@ export class FlightControls {
       this.state.boost = false;
     });
     container.appendChild(this.boostButton);
+
+    // Ascend button (flap upward)
+    const ascendButton = document.createElement('button');
+    ascendButton.textContent = '🪽';
+    ascendButton.style.position = 'absolute';
+    ascendButton.style.bottom = '106px';
+    ascendButton.style.right = '32px';
+    ascendButton.style.width = '58px';
+    ascendButton.style.height = '58px';
+    ascendButton.style.borderRadius = '50%';
+    ascendButton.style.background = 'rgba(255, 255, 255, 0.75)';
+    ascendButton.style.border = '3px solid #ffa6d2';
+    ascendButton.style.fontSize = '22px';
+    ascendButton.style.cursor = 'pointer';
+    ascendButton.style.zIndex = '20';
+    ascendButton.style.touchAction = 'none';
+
+    ascendButton.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      this.state.ascend = true;
+    });
+    ascendButton.addEventListener('pointerup', () => {
+      this.state.ascend = false;
+    });
+    ascendButton.addEventListener('pointercancel', () => {
+      this.state.ascend = false;
+    });
+    container.appendChild(ascendButton);
+
+    // Descend button (swoop / land)
+    const descendButton = document.createElement('button');
+    descendButton.textContent = '🔽';
+    descendButton.style.position = 'absolute';
+    descendButton.style.bottom = '174px';
+    descendButton.style.right = '32px';
+    descendButton.style.width = '58px';
+    descendButton.style.height = '58px';
+    descendButton.style.borderRadius = '50%';
+    descendButton.style.background = 'rgba(255, 255, 255, 0.75)';
+    descendButton.style.border = '3px solid #ffa6d2';
+    descendButton.style.fontSize = '22px';
+    descendButton.style.cursor = 'pointer';
+    descendButton.style.zIndex = '20';
+    descendButton.style.touchAction = 'none';
+
+    descendButton.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      this.state.descend = true;
+    });
+    descendButton.addEventListener('pointerup', () => {
+      this.state.descend = false;
+    });
+    descendButton.addEventListener('pointercancel', () => {
+      this.state.descend = false;
+    });
+    container.appendChild(descendButton);
   }
 
   private bindEvents(container: HTMLElement): void {
@@ -119,15 +181,23 @@ export class FlightControls {
 
   private handleKeyDown = (e: KeyboardEvent): void => {
     this.keys.add(e.code);
-    if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+    if (e.code === 'Space') {
+      this.state.ascend = true;
       this.state.boost = true;
+    }
+    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyC') {
+      this.state.descend = true;
     }
   };
 
   private handleKeyUp = (e: KeyboardEvent): void => {
     this.keys.delete(e.code);
-    if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+    if (e.code === 'Space') {
+      this.state.ascend = false;
       this.state.boost = false;
+    }
+    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyC') {
+      this.state.descend = false;
     }
   };
 
@@ -226,6 +296,14 @@ export class FlightControls {
     if (kbForward !== 0 || kbStrafe !== 0) {
       this.state.forward = kbForward;
       this.state.strafe = kbStrafe;
+    }
+
+    if (this.keys.has('Space')) {
+      this.state.ascend = true;
+      this.state.boost = true;
+    }
+    if (this.keys.has('ShiftLeft') || this.keys.has('ShiftRight') || this.keys.has('KeyC')) {
+      this.state.descend = true;
     }
   }
 

@@ -81,6 +81,7 @@ export class ChunkManager {
       const url = options.workerUrl ?? new URL('./worker.ts', import.meta.url);
       this.worker = new Worker(url, { type: 'module' });
       this.worker.onmessage = this.handleWorkerMessage;
+      this.worker.onerror = (e) => console.error('Worker error:', (e as ErrorEvent).message || e);
     }
   }
 
@@ -89,6 +90,10 @@ export class ChunkManager {
   }
 
   public getLoadedCount(): number {
+    return this.loadedChunks.size;
+  }
+
+  public getLoadedChunkCount(): number {
     return this.loadedChunks.size;
   }
 

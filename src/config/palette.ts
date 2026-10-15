@@ -25,7 +25,22 @@ export const PALETTE = {
   flowerStem: 0x98dfa8,
   flowerPetal: 0xffa4d4,
   dreamhouseWall: 0xfff0f7,
-  dreamhouseRoof: 0xff70aa
+  dreamhouseRoof: 0xff70aa,
+
+  // Relative Voxel Biomes & Seascape tokens
+  coralSand: 0xffe5ec,
+  coralReefPink: 0xff66b2,
+  coralReefTeal: 0x72efdd,
+  pearlBeachTop: 0xfff5e4,
+  pearlBeachSide: 0xffd6ba,
+  dreamMeadowTop: 0xff85b3,
+  dreamMeadowSide: 0xd48c9e,
+  sakuraLavender: 0xc8a2ff,
+  sakuraMint: 0x98f5e1,
+  highlandsRoseQuartz: 0xf4acb7,
+  highlandsSide: 0xe295a3,
+  snowPeakTop: 0xffffff,
+  snowPeakSide: 0xfce4ec
 } as const;
 
 export type PaletteColor = keyof typeof PALETTE;

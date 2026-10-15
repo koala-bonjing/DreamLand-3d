@@ -41,13 +41,14 @@ describe('Procedural World & Noise Determinism', () => {
   });
 
   it('biome thresholds and colors map properly', () => {
-    expect(getBiomeAt(0.1)).toBe('DeepWater');
-    expect(getBiomeAt(0.25)).toBe('Water');
-    expect(getBiomeAt(0.33)).toBe('Sand');
-    expect(getBiomeAt(0.5)).toBe('PinkMeadow');
-    expect(getBiomeAt(0.65)).toBe('MintGrass');
-    expect(getBiomeAt(0.8)).toBe('LilacHills');
-    expect(getBiomeAt(0.95)).toBe('PearlPeaks');
+    expect(getBiomeAt(0.1)).toBe('CRYSTAL_LAGOON');
+    expect(getBiomeAt(0.25)).toBe('PEARL_BEACH');
+    expect(getBiomeAt(0.5)).toBe('DREAM_MEADOW');
+    expect(getBiomeAt(0.65)).toBe('SAKURA_GROVE');
+    expect(getBiomeAt(0.95)).toBe('CANDY_HIGHLANDS');
+
+    // Spatial coordinate sampling
+    expect(getBiomeAt(0, 0, 12345)).toBeDefined();
 
     const col = getBiomeColor(0.5, 0.2);
     expect(col).toHaveLength(3);

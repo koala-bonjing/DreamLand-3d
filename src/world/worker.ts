@@ -1,5 +1,5 @@
-import { heightAt, moistureAt } from './noise';
-import { getBiomeColor, normalizeHeightForBiome } from './biomes';
+import { heightAt } from './noise';
+import { getVoxelBlockColor } from './biomes';
 import {
   ChunkBuildRequest,
   ChunkBuildResponse,
@@ -40,25 +40,40 @@ self.onmessage = (e: MessageEvent<ChunkBuildRequest>) => {
       const lx = (fracX - 0.5) * CHUNK_SIZE;
       const wx = worldOriginX + lx;
 
-      const wy = heightAt(wx, wz, seed);
+      const wy = Math.floor(heightAt(wx, wz, seed));
 
       const offset = vertIdx * 3;
       positions[offset + 0] = lx;
       positions[offset + 1] = wy;
       positions[offset + 2] = lz;
 
-      // Accurate biome mapping matching terrain elevation
-      const normH = normalizeHeightForBiome(wy);
-      const moist = moistureAt(wx, wz, seed);
-      const rgb = getBiomeColor(normH, moist);
+      // Sample cardinal neighbors for exposed cliff faces and step-base ambient occlusion
+      const hL = Math.floor(heightAt(wx - 1, wz, seed));
+      const hR = Math.floor(heightAt(wx + 1, wz, seed));
+      const hD = Math.floor(heightAt(wx, wz - 1, seed));
+      const hU = Math.floor(heightAt(wx, wz + 1, seed));
 
-      colors[offset + 0] = rgb[0];
-      colors[offset + 1] = rgb[1];
-      colors[offset + 2] = rgb[2];
+      const minNeighbor = Math.min(hL, hR, hD, hU);
+      const maxNeighbor = Math.max(hL, hR, hD, hU);
 
-      // Analytical normal from height difference
-      const dhdx = (heightAt(wx + 1, wz, seed) - heightAt(wx - 1, wz, seed)) * 0.5;
-      const dhdz = (heightAt(wx, wz + 1, seed) - heightAt(wx, wz - 1, seed)) * 0.5;
+      // Exposed cliff face where neighbor height < current height
+      const isSide = minNeighbor < wy;
+
+      // Baked bottom-vertex Ambient Occlusion (0.78 multiplier at step bases)
+      const ao = maxNeighbor > wy ? 0.78 : 1.0;
+
+      // Subtle 0.95 vs 1.0 checkerboard tint for readable 1x1 voxel blocks
+      const checker = ((Math.floor(wx) + Math.floor(wz)) & 1) ? 0.95 : 1.0;
+
+      const rgb = getVoxelBlockColor(wx, wy, wz, isSide, seed);
+
+      colors[offset + 0] = rgb[0] * checker * ao;
+      colors[offset + 1] = rgb[1] * checker * ao;
+      colors[offset + 2] = rgb[2] * checker * ao;
+
+      // Analytical normal from stepped height difference
+      const dhdx = (hR - hL) * 0.5;
+      const dhdz = (hU - hD) * 0.5;
       const len = Math.hypot(-dhdx, 1.0, -dhdz);
 
       normals[offset + 0] = -dhdx / len;

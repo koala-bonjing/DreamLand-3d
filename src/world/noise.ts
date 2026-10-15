@@ -65,27 +65,52 @@ export function fbm2D(x: number, z: number, seed: number, octaves = 3): number {
 }
 
 /**
- * Deterministic height function shared identically by Worker and Player physics.
- * Scale: 64m chunks. Output height in world units (meters).
+ * Continentalness macro noise (-0.5 to 0.5+) defining geographic elevation bands.
  */
-export function heightAt(wx: number, wz: number, seed: number): number {
-  // Base rolling landscape (frequency 0.006)
-  const base = fbm2D(wx * 0.006, wz * 0.006, seed, 3);
-
-  // Ridges and billows (frequency 0.015)
-  const ridgeSeed = (seed + 7919) >>> 0;
-  const ridge = fbm2D(wx * 0.015, wz * 0.015, ridgeSeed, 2);
-
-  // Map into height range: water at <= 0m, pink meadows at 4-12m, hills at 12-20m, peaks at >20m
-  const elevation = (base - 0.28) * 26 + (ridge - 0.5) * 8;
-
-  return Number(elevation.toFixed(3));
+export function continentalnessAt(wx: number, wz: number, seed: number): number {
+  return (fbm2D(wx * 0.004, wz * 0.004, seed, 3) - 0.5) * 1.35;
 }
 
 /**
- * Secondary moisture layer for biome variation
+ * Secondary moisture layer (freq = 0.009) for biome variation [0, 1].
  */
 export function moistureAt(wx: number, wz: number, seed: number): number {
   const moistureSeed = (seed + 104729) >>> 0;
-  return fbm2D(wx * 0.004, wz * 0.004, moistureSeed, 2);
+  return fbm2D(wx * 0.009, wz * 0.009, moistureSeed, 2);
+}
+
+/**
+ * Deterministic height function shared identically by Worker and Player physics.
+ * Spatially coherent elevation model quantized to integer voxel steps.
+ */
+export function heightAt(wx: number, wz: number, seed: number): number {
+  const c = continentalnessAt(wx, wz, seed);
+  const rawM = moistureAt(wx, wz, seed);
+  const m = (rawM - 0.5) * 1.2;
+
+  let y = 0;
+  if (c < -0.25) {
+    // Crystal Lagoon: underwater depths -8 to -2
+    const t = Math.max(0, Math.min(1, (c - (-0.45)) / 0.20));
+    y = -8 + t * 6;
+  } else if (c < -0.05) {
+    // Malibu Pearl Beach: shoreline -1 to 1 around SEA_LEVEL
+    const t = (c - (-0.25)) / 0.20;
+    y = -1 + t * 2;
+  } else if (c < 0.35) {
+    // Coastal & Mid-Elevation Landmasses: Dream Meadow or Sakura Grove
+    const t = (c - (-0.05)) / 0.40;
+    if (m <= 0.15) {
+      y = 2 + t * 6;
+    } else {
+      y = 3 + t * 7;
+    }
+  } else {
+    // Sugar Crystal Highlands: terraced plateaus and steep cliffs 11 to 24
+    const t = Math.min(1, (c - 0.35) / 0.20);
+    y = 11 + t * 13;
+  }
+
+  const detail = (fbm2D(wx * 0.02, wz * 0.02, seed + 7919, 2) - 0.5) * 1.0;
+  return Math.floor(y + detail);
 }

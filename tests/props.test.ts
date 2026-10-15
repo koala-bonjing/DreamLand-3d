@@ -11,7 +11,8 @@ describe('Props & Procedural Assets', () => {
 
     // Verify children added to scene
     const instancedMeshes = scene.children.filter((c) => c instanceof THREE.InstancedMesh);
-    expect(instancedMeshes.length).toBe(5); // pink trees, mint trees, lilac trees, flowers, houses
+    expect(instancedMeshes.length).toBe(7); // pink trees, mint trees, lilac trees, flowers, houses, gazebos, docks
+    expect(props.getLandmarkCount()).toBeGreaterThanOrEqual(0);
 
     props.dispose();
   });

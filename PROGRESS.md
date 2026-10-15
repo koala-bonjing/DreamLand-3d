@@ -1,1 +1,1 @@
-Phase: P8 · Status: done · Last: browser audit verified: fixed instanced prop culling, biome elevation bands, 240s day cycle, zero console warnings · Next: release · Perf: p95 17.0ms / 59.9fps / 22 draws / 82k tris · Deps: none · Blockers: none
+Phase: P8-Upgrade · Status: done · Last: 3rd-person playable voxel bird avatar, relative biomes/seascape, landmarks, clouds, petals, CDP browser verification · Next: release · Perf: p95 17.0ms / 59.9fps / 42 draws / 58.7k tris · Deps: none · Blockers: none
