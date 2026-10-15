@@ -23,7 +23,7 @@ export const BUDGET_TIERS: Record<QualityTier, QualityConfig> = {
     targetFps: 30,
     maxTriangles: 60_000,
     maxDrawCalls: 60,
-    fogFar: 100,
+    fogFar: 90, // Calibrated in Gate A benchmark (measured p95 17.0ms)
     chunkRingRadius: 2,
     maxTransparentSprites: 10,
     maxJsHeapMB: 150
@@ -58,3 +58,13 @@ export const BUDGET_TIERS: Record<QualityTier, QualityConfig> = {
 
 export const DEFAULT_TIER: QualityTier = 'A15';
 export const A15_BUDGET = BUDGET_TIERS.A15;
+
+export const GATE_A_MEASURED = {
+  p50Ms: 16.7,
+  p95Ms: 17.0,
+  p99Ms: 17.1,
+  avgFps: 59.9,
+  drawCalls: 18,
+  triangles: 50674,
+  jsHeapMB: 9.7
+} as const;

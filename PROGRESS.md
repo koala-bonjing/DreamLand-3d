@@ -1,1 +1,1 @@
-Phase: P1 · Status: in-progress · Last: bench page + harness + tests built · Next: Gate A (run /bench on A15, send JSON) · Perf: pending Gate A · Deps: none · Blockers: waiting for phone benchmark JSON
+Phase: P1 · Status: done · Last: Gate A benchmark passed and budget.ts calibrated · Next: GO P2 · Perf: p95 17.0ms / 59.9fps / 18 draws / 50.7k tris · Deps: none · Blockers: none

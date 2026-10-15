@@ -1,0 +1,92 @@
+{
+  "timestamp": "2026-10-15T05:41:34.813Z",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+  "deviceTierEstimate": "A15",
+  "recommendedScenario": {
+    "pixelRatio": 1.5,
+    "fogFar": 130,
+    "trees": 3000,
+    "chunkRing": 3
+  },
+  "tierStatus": {
+    "tier30fps": true,
+    "tier60fps": false
+  },
+  "scenarios": [
+    {
+      "scenario": {
+        "pixelRatio": 1,
+        "fogFar": 60,
+        "trees": 500,
+        "chunkRing": 1
+      },
+      "p50": 16.7,
+      "p95": 16.9,
+      "p99": 17.2,
+      "avgFps": 59.9,
+      "drawCalls": 9,
+      "triangles": 21376,
+      "jsHeapMB": 8.3
+    },
+    {
+      "scenario": {
+        "pixelRatio": 1.25,
+        "fogFar": 90,
+        "trees": 1500,
+        "chunkRing": 2
+      },
+      "p50": 16.7,
+      "p95": 17,
+      "p99": 17.1,
+      "avgFps": 59.9,
+      "drawCalls": 18,
+      "triangles": 50674,
+      "jsHeapMB": 9.7
+    },
+    {
+      "scenario": {
+        "pixelRatio": 1.5,
+        "fogFar": 90,
+        "trees": 1500,
+        "chunkRing": 2
+      },
+      "p50": 16.7,
+      "p95": 16.9,
+      "p99": 17,
+      "avgFps": 59.9,
+      "drawCalls": 16,
+      "triangles": 46830,
+      "jsHeapMB": 10.3
+    },
+    {
+      "scenario": {
+        "pixelRatio": 1.25,
+        "fogFar": 130,
+        "trees": 3000,
+        "chunkRing": 2
+      },
+      "p50": 16.7,
+      "p95": 17,
+      "p99": 17.2,
+      "avgFps": 20.2,
+      "drawCalls": 18,
+      "triangles": 68674,
+      "jsHeapMB": 8.1
+    },
+    {
+      "scenario": {
+        "pixelRatio": 1.5,
+        "fogFar": 130,
+        "trees": 3000,
+        "chunkRing": 3
+      },
+      "p50": 16.7,
+      "p95": 16.9,
+      "p99": 17,
+      "avgFps": 59.9,
+      "drawCalls": 29,
+      "triangles": 89816,
+      "jsHeapMB": 10.2
+    }
+  ]
+}
