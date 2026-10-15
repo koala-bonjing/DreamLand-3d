@@ -95,8 +95,9 @@ export class RealtimeManager {
     this.currentSkin = initialSkin;
     this.remoteBird = new RemoteBird(scene, initialSkin);
 
-    const url = import.meta.env.VITE_SUPABASE_URL;
-    const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const env = import.meta.env as Record<string, string | undefined>;
+    const url = env.VITE_SUPABASE_URL || env.VITE_PUBLIC_SUPABASE_URL || env.VITE_STORAGE_URL;
+    const key = env.VITE_SUPABASE_ANON_KEY || env.VITE_PUBLIC_SUPABASE_ANON_KEY || env.VITE_STORAGE_ANON_KEY;
 
     if (url && key && url.startsWith('http')) {
       try {
